@@ -48,11 +48,14 @@ def compute_metrics(p):
     }
 
 
-def do_train(train_encodings, val_encodings, model_out_path: str, log_out_path: str):
+def do_train(train_encodings, val_encodings, model_out_path: str, log_out_path: str, use_cuda=False):
     train_dataset = TweetQADataset(train_encodings)
     val_dataset = TweetQADataset(val_encodings)
 
     bert_model = BertForQuestionAnswering.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
+
+    if use_cuda:
+        bert_model.to('cuda')
 
     training_args = TrainingArguments(
         output_dir=model_out_path,
