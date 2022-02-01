@@ -6,7 +6,7 @@ setuptools.setup(
     author="Luke Westfall et al",
     author_email="lwestfall1@gmail.com",
     description="Common functions for tweetqa model training",
-    url="https://github.com/lwestfall/tqa-training-lib",
+    url="https://github.com/sweng480-team23/tqa-training-lib",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
