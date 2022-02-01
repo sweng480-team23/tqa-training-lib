@@ -113,9 +113,8 @@ def normalize_answer(s):
     return white_space_fix(remove_articles(remove_punc(lower(s))))
 
 
-def ans_score(ans, gold_list):
-    meteor_scorer = Meteor()
-    rouge_scorer = Rouge()
+def ans_score(ans, gold_list, meteor_scorer, rouge_scorer):
+
     ans = normalize_answer(ans)
     gold_list = [normalize_answer(ref) for ref in gold_list]
     bleu = sentence_bleu([_.split() for _ in gold_list], ans.split(), weights=(1, 0, 0, 0))
@@ -149,7 +148,10 @@ def score_model(model_path: str):
     data: pd.DataFrame = read_data('https://raw.githubusercontent.com/sweng480-team23/tweet-qa-data/main/dev.json')
     gold_file = generate_gold_file(data)
     user_file = generate_user_file(data, model_path)
-    scores = evaluate(gold_file, user_file)
+
+    meteor_scorer = Meteor()
+    rouge_scorer = Rouge()
+    scores = evaluate(gold_file, user_file, meteor_scorer, rouge_scorer)
     print(scores)
     return scores
     # TODO: get existing model, update score values, save updates
