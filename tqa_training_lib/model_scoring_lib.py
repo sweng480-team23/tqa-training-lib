@@ -114,7 +114,6 @@ def normalize_answer(s):
 
 
 def ans_score(ans, gold_list, meteor_scorer, rouge_scorer):
-
     ans = normalize_answer(ans)
     gold_list = [normalize_answer(ref) for ref in gold_list]
     bleu = sentence_bleu([_.split() for _ in gold_list], ans.split(), weights=(1, 0, 0, 0))
@@ -123,7 +122,7 @@ def ans_score(ans, gold_list, meteor_scorer, rouge_scorer):
     return {'bleu': bleu, 'meteor': meteor, 'rouge': rouge}
 
 
-def evaluate(gold, pred):
+def evaluate(gold, pred, meteor_scorer, rouge_scorer):
     idx2gold = {item['qid']: item['Answer'] for item in gold}
     idx2pred = {item['qid']: item['Answer'] for item in pred}
     idx2scores = {}
@@ -132,7 +131,7 @@ def evaluate(gold, pred):
             pred_ans = idx2pred[id_][0]
         else:
             pred_ans = idx2pred[id_]
-        idx2scores[id_] = ans_score(pred_ans, idx2gold[id_])
+        idx2scores[id_] = ans_score(pred_ans, idx2gold[id_], meteor_scorer, rouge_scorer)
     bleus = [item['bleu'] for item in idx2scores.values()]
     meteors = [item['meteor'] for item in idx2scores.values()]
     rouges = [item['rouge'] for item in idx2scores.values()]
