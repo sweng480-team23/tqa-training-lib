@@ -70,7 +70,7 @@ def identify_start_and_end_positions(datum: dict) -> dict:
     }
 
 
-def add_token_positions(encodings, answers):
+def add_token_positions(tokenizer, encodings, answers):
     start_positions = []
     end_positions = []
     for i in range(len(answers)):
@@ -121,7 +121,7 @@ def prepare_data(df: pd.DataFrame):
         padding='max_length',
         truncation=True)
 
-    add_token_positions(train_encodings, quality_x_train)
-    add_token_positions(val_encodings, quality_x_val)
+    add_token_positions(tokenizer, train_encodings, quality_x_train)
+    add_token_positions(tokenizer, val_encodings, quality_x_val)
 
     return train_encodings, val_encodings
