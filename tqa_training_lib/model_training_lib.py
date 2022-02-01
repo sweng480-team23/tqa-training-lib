@@ -48,27 +48,33 @@ def compute_metrics(p):
     }
 
 
-def do_train(train_encodings, val_encodings, model_out_path: str, log_out_path: str, use_cuda=False):
+def do_train(train_encodings, val_encodings, use_cuda=False, training_args=None):
     train_dataset = TweetQADataset(train_encodings)
     val_dataset = TweetQADataset(val_encodings)
 
     bert_model = BertForQuestionAnswering.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
 
-    if use_cuda:
-        bert_model.to('cuda')
+    device = 'cpu'
 
-    training_args = TrainingArguments(
-        output_dir=model_out_path,
-        num_train_epochs=2,
-        per_device_train_batch_size=16,
-        per_device_eval_batch_size=32,
-        warmup_steps=500,
-        weight_decay=0.01,
-        logging_dir=log_out_path,
-        logging_steps=500,
-        save_strategy="steps",
-        save_steps=500
-    )
+    if use_cuda:
+        device = 'cuda'
+
+    print('using device: ' + device)
+    bert_model = bert_model.to(device)
+
+    if training_args is None:
+        training_args = TrainingArguments(
+            output_dir='model_out/',
+            num_train_epochs=2,
+            per_device_train_batch_size=12,
+            per_device_eval_batch_size=12,
+            warmup_steps=500,
+            weight_decay=0.01,
+            logging_dir='model_out/log',
+            logging_steps=500,
+            save_strategy="steps",
+            save_steps=500
+        )
 
     bert_model.train()
 
@@ -82,4 +88,4 @@ def do_train(train_encodings, val_encodings, model_out_path: str, log_out_path: 
 
     trainer.train()
     trainer.evaluate()
-    trainer.save_model(model_out_path)
+    trainer.save_model(training_args.output_dir)
