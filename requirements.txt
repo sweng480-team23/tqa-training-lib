@@ -13,8 +13,7 @@ isort==5.10.1
 joblib==1.1.0
 lazy-object-proxy==1.7.1
 mccabe==0.6.1
-nlg-eval==2.3
-nltk==3.6.7
+git+https://github.com/Maluuba/nlg-eval.git@master
 numpy==1.22.1
 packaging==21.3
 pandas==1.4.0
@@ -46,3 +45,5 @@ typing_extensions==4.0.1
 urllib3==1.26.8
 wrapt==1.13.3
 xdg==5.1.1
+
+--find-links https://download.pytorch.org/whl/torch_stable.html
