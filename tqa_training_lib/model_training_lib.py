@@ -6,7 +6,7 @@ from sklearn.metrics import precision_score
 from sklearn.metrics import f1_score
 from transformers import Trainer
 from transformers import TrainingArguments
-from transformers import BertForQuestionAnswering
+from transformers import AutoModelForQuestionAnswering
 
 
 class TweetQADataset(torch.utils.data.Dataset):
@@ -52,7 +52,7 @@ def do_train(train_encodings, val_encodings, use_cuda=False, training_args=None)
     train_dataset = TweetQADataset(train_encodings)
     val_dataset = TweetQADataset(val_encodings)
 
-    bert_model = BertForQuestionAnswering.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
+    bert_model = AutoModelForQuestionAnswering.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
 
     device = 'cpu'
 

@@ -1,7 +1,7 @@
 import pandas as pd
 from typing import Tuple
 from sklearn.model_selection import train_test_split
-from transformers import BertTokenizerFast
+from transformers import AutoTokenizer
 from fuzzywuzzy import fuzz, process
 
 
@@ -105,7 +105,7 @@ def prepare_data(df: pd.DataFrame):
     quality_x_train = [datum for datum in x_train if datum["start_position"] >= 0]
     quality_x_val = [datum for datum in x_val if datum["start_position"] >= 0]
 
-    tokenizer = BertTokenizerFast.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
+    tokenizer = AutoTokenizer.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
 
     train_encodings = tokenizer(
         [q["tweet"] for q in quality_x_train],
