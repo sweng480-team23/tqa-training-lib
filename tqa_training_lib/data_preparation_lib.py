@@ -41,8 +41,7 @@ def remove_groupings(datum: dict):
 
 def normalise_datum(datum: dict):
     answer = ' '.join(normalise(datum["Answer"], verbose=False))
-    print('tweet before: ' + datum["Tweet"])
-    tweet = ' '.join(normalise(datum["Tweet"], verbose=True))
+    tweet = ' '.join(normalise(datum["Tweet"], verbose=False))
     question = ' '.join(normalise(datum["Question"], verbose=False))
 
     return {"Answer": answer,
@@ -125,7 +124,11 @@ def add_token_positions(tokenizer, encodings, answers):
 def do_filters(datum: dict):
     datum = lower_case_filter(datum)
     datum = remove_groupings(datum)
-    datum = normalise_datum(datum)
+    try:
+        datum = normalise_datum(datum)
+    except BaseException:
+        print('skipped normalising due to error, qid = ' + datum['qid'])
+        pass
     datum = identify_start_and_end_positions(datum)
     return datum
 
