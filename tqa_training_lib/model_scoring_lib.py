@@ -9,7 +9,7 @@ from transformers import BertModel, BertTokenizer
 from nltk.translate.bleu_score import sentence_bleu
 from nlgeval.pycocoevalcap.meteor.meteor import Meteor
 from nlgeval.pycocoevalcap.rouge.rouge import Rouge
-from transformers import BertTokenizerFast, BertForQuestionAnswering
+from transformers import AutoTokenizer, AutoModelForQuestionAnswering
 
 
 class BertModelRunner(object):
@@ -65,8 +65,8 @@ def read_data(url: str) -> pd.DataFrame:
 
 
 def get_model_runner(model_path: str) -> BertModelRunner:
-    tokenizer = BertTokenizerFast.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
-    model = BertForQuestionAnswering.from_pretrained(model_path)
+    tokenizer = AutoTokenizer.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
+    model = AutoModelForQuestionAnswering.from_pretrained(model_path)
     return BertModelRunner(tokenizer, model)
 
 
