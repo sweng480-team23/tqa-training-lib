@@ -1,3 +1,4 @@
+import json
 import pandas as pd
 import numpy as np
 import string
@@ -143,7 +144,7 @@ def evaluate(gold, pred, meteor_scorer, rouge_scorer):
     }
 
 
-def score_model(model_path: str):
+def score_model(model_path: str, save_gold_user_files=False, print_scores=False):
     data: pd.DataFrame = read_data('https://raw.githubusercontent.com/sweng480-team23/tweet-qa-data/main/dev.json')
     gold_file = generate_gold_file(data)
     user_file = generate_user_file(data, model_path)
@@ -151,7 +152,16 @@ def score_model(model_path: str):
     meteor_scorer = Meteor()
     rouge_scorer = Rouge()
     scores = evaluate(gold_file, user_file, meteor_scorer, rouge_scorer)
-    print(scores)
+
+    if print_scores:
+        print(scores)
+
+    if save_gold_user_files:
+        with open('gold_file.json', 'w') as f_out:
+            json.dump(gold_file, f_out)
+        with open('user_file.json', 'w') as f_out:
+            json.dump(user_file, f_out)
+
     return scores
     # TODO: get existing model, update score values, save updates
     # model.bleu_score = scores['BLEU-1']
