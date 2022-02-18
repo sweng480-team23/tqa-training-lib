@@ -1,65 +1,50 @@
-from transformers import TFAutoModelForQuestionAnswering, TFTrainer, TFTrainingArguments
+import gc
+from transformers import TFBertForQuestionAnswering
 import tensorflow as tf
 
 
-def do_train(train_encodings, val_encodings, use_cuda=False, training_args=None):
+def do_train(train_encodings, val_encodings):
+    gpus = tf.config.list_physical_devices('GPU')
+    if gpus:
+        try:
+            # Currently, memory growth needs to be the same across GPUs
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+                logical_gpus = tf.config.list_logical_devices('GPU')
+                print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+        except RuntimeError as e:
+            # Memory growth must be set before GPUs have been initialized
+            print(e)
+
     train_dataset = tf.data.Dataset.from_tensor_slices((
         {key: train_encodings[key] for key in ['input_ids', 'attention_mask']},
-        {key: train_encodings[key] for key in ['start_positions', 'end_positions']}
+        {key: train_encodings[key] for key in ['start_logits', 'end_logits']}
     ))
     val_dataset = tf.data.Dataset.from_tensor_slices((
         {key: val_encodings[key] for key in ['input_ids', 'attention_mask']},
-        {key: val_encodings[key] for key in ['start_positions', 'end_positions']}
+        {key: val_encodings[key] for key in ['start_logits', 'end_logits']}
     ))
 
-    model = TFAutoModelForQuestionAnswering.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
-
-    device = 'cpu'
-
-    if use_cuda:
-        device = 'cuda'
-
-    print('using device: ' + device)
-    model = model.to(device)
+    model = TFBertForQuestionAnswering.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
 
     # Keras will expect a tuple when dealing with labels
-    train_dataset = train_dataset.map(lambda x, y: (x, (y['start_positions'], y['end_positions'])))
+    # train_dataset = train_dataset.map(lambda x, y: (x, (y['start_positions'], y['end_positions'])))
+    # train_dataset = train_dataset.map(lambda x, y: (x, (y['start_logits'], y['end_logits'])))
 
     # Keras will assign a separate loss for each output and add them together. So we'll just use the standard CE loss
     # instead of using the built-in model.compute_loss, which expects a dict of outputs and averages the two terms.
     # Note that this means the loss will be 2x of when using TFTrainer since we're adding instead of averaging them.
     loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-    # model.distilbert.return_dict = False # if using 🤗 Transformers >3.02, make sure outputs are tuples
+    model.return_dict = False  # if using 🤗 Transformers >3.02, make sure outputs are tuples
 
-    optimizer = tf.keras.optimizers.Adam(learning_rate=5e-5)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=3e-5)
     model.compile(optimizer=optimizer, loss=loss)   # can also use any keras loss fn
     # model.fit(train_dataset.shuffle(1000).batch(12), epochs=3, batch_size=12)
-    model.fit(train_dataset.batch(12), epochs=3, batch_size=12)
+    # model.fit(train_dataset.batch(4), epochs=2, batch_size=4)   # this works!
+    # model.fit(train_dataset.batch(8), epochs=2, batch_size=8)   # this works?? score is shit
+    model.fit(train_dataset.batch(6), epochs=2, batch_size=6)   #
+    # model.fit(train_dataset.batch(12), epochs=2, batch_size=12)   # this DOES NOT work (oom)!
 
-    # if training_args is None:
-    #     training_args = TFTrainingArguments(
-    #         output_dir='model_out/',
-    #         num_train_epochs=2,
-    #         per_device_train_batch_size=12,
-    #         per_device_eval_batch_size=12,
-    #         warmup_steps=500,
-    #         weight_decay=0.01,
-    #         logging_dir='model_out/log',
-    #         logging_steps=500,
-    #         save_strategy="steps",
-    #         save_steps=500
-    #     )
-
-    # bert_model.train()
-
-    # trainer = TFTrainer(
-    #     model=bert_model,
-    #     args=training_args,
-    #     train_dataset=train_dataset,
-    #     eval_dataset=val_dataset,
-    #     compute_metrics=compute_metrics
-    # )
-
-    # trainer.train()
-    # trainer.evaluate()
-    # trainer.save_model(training_args.output_dir)
+    model.save_pretrained('model_out/')
+    del model, loss, optimizer, val_dataset, train_dataset
+    gc.collect()

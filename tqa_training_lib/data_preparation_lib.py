@@ -258,7 +258,7 @@ def identify_start_and_end_positions(datum: dict) -> dict:
     }
 
 
-def add_token_positions(tokenizer, encodings, answers):
+def add_token_positions(tokenizer, encodings, answers, for_tf=False):
     start_positions = []
     end_positions = []
     for i in range(len(answers)):
@@ -272,7 +272,15 @@ def add_token_positions(tokenizer, encodings, answers):
         if end_positions[-1] is None:
             end_positions[-1] = tokenizer.model_max_length
 
-    encodings.update({'start_positions': start_positions, 'end_positions': end_positions})
+    # tensorflow will expect different names from pytorch
+    if for_tf:
+        start_name = 'start_logits'
+        end_name = 'end_logits'
+    else:
+        start_name = 'start_positions'
+        end_name = 'end_positions'
+
+    encodings.update({start_name: start_positions, end_name: end_positions})
 
 
 def do_filters(datum: dict):
@@ -289,11 +297,11 @@ def do_filters(datum: dict):
     # except BaseException:
     #     print('skipped normalising due to error, qid = ' + datum['qid'])
     #     pass
-    # datum = identify_start_and_end_positions(datum)
+    datum = identify_start_and_end_positions(datum)
     return datum
 
 
-def prepare_data(df: pd.DataFrame, save_data=False, print_stats=False):
+def prepare_data(df: pd.DataFrame, for_tf=False, save_data=False, print_stats=False):
     df["Answer"] = df["Answer"].explode()
     train_data, val_data = train_test_split(df, test_size=0.2)
     x_train_before = train_data.to_dict('records')
@@ -354,7 +362,7 @@ def prepare_data(df: pd.DataFrame, save_data=False, print_stats=False):
         padding='max_length',
         truncation=True)
 
-    add_token_positions(tokenizer, train_encodings, quality_x_train)
-    add_token_positions(tokenizer, val_encodings, quality_x_val)
+    add_token_positions(tokenizer, train_encodings, quality_x_train, for_tf)
+    add_token_positions(tokenizer, val_encodings, quality_x_val, for_tf)
 
     return train_encodings, val_encodings

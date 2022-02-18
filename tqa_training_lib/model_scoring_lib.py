@@ -1,12 +1,15 @@
 import json
+import os
+import shutil
 import pandas as pd
 import numpy as np
 import string
 import re
 import torch
+import tensorflow as tf
 
 from typing import List
-from transformers import BertModel, BertTokenizer
+from transformers import BertModel, BertTokenizer, BertTokenizerFast, TFAutoModelForQuestionAnswering, TFBertForQuestionAnswering, TFBertModel
 from nltk.translate.bleu_score import sentence_bleu
 from nlgeval.pycocoevalcap.meteor.meteor import Meteor
 from nlgeval.pycocoevalcap.rouge.rouge import Rouge
@@ -144,10 +147,53 @@ def evaluate(gold, pred, meteor_scorer, rouge_scorer):
     }
 
 
-def score_model(model_path: str, save_gold_user_files=False, print_scores=False):
+def generate_user_file_tf(df: pd.DataFrame, model_path: str) -> List[dict]:
+    gpus = tf.config.list_physical_devices('GPU')
+    if gpus:
+        try:
+            # Currently, memory growth needs to be the same across GPUs
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+                logical_gpus = tf.config.list_logical_devices('GPU')
+                print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+        except RuntimeError as e:
+            # Memory growth must be set before GPUs have been initialized
+            print(e)
+    model = TFBertForQuestionAnswering.from_pretrained(model_path)
+    tokenizer = BertTokenizerFast.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
+    data_dict: dict = df.to_dict('records')
+    return [to_prediction_tf(datum, model, tokenizer) for datum in data_dict]
+
+
+def to_prediction_tf(datum: dict, model: TFBertModel, tokenizer: BertTokenizer) -> dict:
+    answer = answer_tweet_question_tf(model, tokenizer, datum['Tweet'], datum['Question'])
+
+    return {
+        'qid': datum['qid'],
+        'Tweet': datum['Tweet'],
+        'Question': datum['Question'],
+        'Answer': answer,
+        'Actual Answer': datum['Answer']
+    }
+
+
+def answer_tweet_question_tf(model: TFBertForQuestionAnswering, tokenizer: BertTokenizer, tweet, question):
+    input_dict = tokenizer(question, tweet, return_tensors="tf")
+    outputs = model(input_dict)
+    start_logits = outputs.start_logits
+    end_logits = outputs.end_logits
+    all_tokens = tokenizer.convert_ids_to_tokens(input_dict["input_ids"].numpy()[0])
+    answer = " ".join(all_tokens[tf.math.argmax(start_logits, 1)[0]:tf.math.argmax(end_logits, 1)[0] + 1])
+    return answer
+
+
+def score_model(model_path: str, save_gold_user_files=False, print_scores=False, use_tf=False):
     data: pd.DataFrame = read_data('https://raw.githubusercontent.com/sweng480-team23/tweet-qa-data/main/dev.json')
     gold_file = generate_gold_file(data)
-    user_file = generate_user_file(data, model_path)
+    if use_tf:
+        user_file = generate_user_file_tf(data, model_path)
+    else:
+        user_file = generate_user_file(data, model_path)
 
     meteor_scorer = Meteor()
     rouge_scorer = Rouge()
@@ -157,13 +203,13 @@ def score_model(model_path: str, save_gold_user_files=False, print_scores=False)
         print(scores)
 
     if save_gold_user_files:
-        with open('gold_file.json', 'w') as f_out:
+        if os.path.exists('scoring/'):
+            shutil.rmtree('scoring/')
+
+        os.mkdir('scoring/')
+        with open('scoring/gold_file.json', 'w') as f_out:
             json.dump(gold_file, f_out)
-        with open('user_file.json', 'w') as f_out:
+        with open('scoring/user_file.json', 'w') as f_out:
             json.dump(user_file, f_out)
 
     return scores
-    # TODO: get existing model, update score values, save updates
-    # model.bleu_score = scores['BLEU-1']
-    # model.meteor_score = scores['METEOR']
-    # model.rouge_score = scores['ROUGE']
