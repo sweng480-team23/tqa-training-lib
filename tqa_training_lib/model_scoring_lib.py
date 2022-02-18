@@ -172,7 +172,7 @@ def to_prediction_tf(datum: dict, model: TFBertModel, tokenizer: BertTokenizer) 
         'qid': datum['qid'],
         'Tweet': datum['Tweet'],
         'Question': datum['Question'],
-        'Answer': answer,
+        'Answer': answer_fixed,
         'Actual Answer': datum['Answer']
     }
 
