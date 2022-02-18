@@ -167,7 +167,7 @@ def generate_user_file_tf(df: pd.DataFrame, model_path: str) -> List[dict]:
 
 def to_prediction_tf(datum: dict, model: TFBertModel, tokenizer: BertTokenizer) -> dict:
     answer = answer_tweet_question_tf(model, tokenizer, datum['Tweet'], datum['Question'])
-
+    answer_fixed = re.sub(r'\s##', '', answer)
     return {
         'qid': datum['qid'],
         'Tweet': datum['Tweet'],
