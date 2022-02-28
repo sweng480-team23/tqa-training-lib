@@ -160,7 +160,7 @@ def generate_user_file_tf(df: pd.DataFrame, model_path: str) -> List[dict]:
             # Memory growth must be set before GPUs have been initialized
             print(e)
     model = TFBertForQuestionAnswering.from_pretrained(model_path)
-    tokenizer = BertTokenizerFast.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
+    tokenizer = AutoTokenizer.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
     data_dict: dict = df.to_dict('records')
     return [to_prediction_tf(datum, model, tokenizer) for datum in data_dict]
 
@@ -168,6 +168,7 @@ def generate_user_file_tf(df: pd.DataFrame, model_path: str) -> List[dict]:
 def to_prediction_tf(datum: dict, model: TFBertModel, tokenizer: BertTokenizer) -> dict:
     answer = answer_tweet_question_tf(model, tokenizer, datum['Tweet'], datum['Question'])
     answer_fixed = re.sub(r'\s##', '', answer)
+    # print(answer + ' -> ' + answer_fixed)
     return {
         'qid': datum['qid'],
         'Tweet': datum['Tweet'],

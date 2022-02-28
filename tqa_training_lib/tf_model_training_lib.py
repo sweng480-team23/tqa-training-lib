@@ -2,8 +2,10 @@ import gc
 from transformers import TFBertForQuestionAnswering
 import tensorflow as tf
 
+from tqa_training_lib.training_args_simple import TrainingArgsSimple
 
-def do_train(train_encodings, val_encodings):
+
+def do_train(train_encodings, val_encodings, args: TrainingArgsSimple):
     gpus = tf.config.list_physical_devices('GPU')
     if gpus:
         try:
@@ -25,7 +27,7 @@ def do_train(train_encodings, val_encodings):
         {key: val_encodings[key] for key in ['start_logits', 'end_logits']}
     ))
 
-    model = TFBertForQuestionAnswering.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
+    model = TFBertForQuestionAnswering.from_pretrained(args.base_model)
 
     # Keras will expect a tuple when dealing with labels
     # train_dataset = train_dataset.map(lambda x, y: (x, (y['start_positions'], y['end_positions'])))
@@ -37,14 +39,14 @@ def do_train(train_encodings, val_encodings):
     loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     model.return_dict = False  # if using 🤗 Transformers >3.02, make sure outputs are tuples
 
-    optimizer = tf.keras.optimizers.Adam(learning_rate=3e-5)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=args.learning_rate)
     model.compile(optimizer=optimizer, loss=loss)   # can also use any keras loss fn
     # model.fit(train_dataset.shuffle(1000).batch(12), epochs=3, batch_size=12)
     # model.fit(train_dataset.batch(4), epochs=2, batch_size=4)   # this works!
     # model.fit(train_dataset.batch(8), epochs=2, batch_size=8)   # this works?? score is shit
-    model.fit(train_dataset.batch(6), epochs=2, batch_size=6)   #
+    model.fit(train_dataset.batch(args.batch_size), epochs=args.epochs, batch_size=args.batch_size)       # works
     # model.fit(train_dataset.batch(12), epochs=2, batch_size=12)   # this DOES NOT work (oom)!
 
-    model.save_pretrained('model_out/')
+    model.save_pretrained(args.model_output_path)
     del model, loss, optimizer, val_dataset, train_dataset
     gc.collect()
