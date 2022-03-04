@@ -7,7 +7,7 @@ from tqa_training_lib.trainers.tweetqa_trainer import TweetQATrainer
 
 
 class TFTweetQATrainer(TweetQATrainer):
-    def train(train_encodings, val_encodings, args):
+    def train(self, train_encodings, val_encodings, args):
         gpus = tf.config.list_physical_devices('GPU')
         if gpus:
             try:

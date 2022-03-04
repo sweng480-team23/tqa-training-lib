@@ -1,10 +1,9 @@
 import shutil
+import os
 from tqa_training_lib.data_extraction_lib import extract_data
 from tqa_training_lib.data_preparation_lib import prepare_data
 from tqa_training_lib.model_scoring_lib import score_model
-import os
-from tqa_training_lib.trainers.tweetqa_trainer import TweetQATrainer
-
+from tqa_training_lib.trainers.tf_tweetqa_trainer import TFTweetQATrainer
 from tqa_training_lib.trainers.tweetqa_training_args import TweetQATrainingArgs
 
 model_out_path = 'model_out/'
@@ -23,12 +22,13 @@ args = TweetQATrainingArgs(
     learning_rate=2.9e-5,
     batch_size=8,
     base_model='bert-large-uncased-whole-word-masking-finetuned-squad',
-    model_output_path=model_out_path
+    model_output_path=model_out_path,
+    use_cuda=True
 )
 
 print('---------------------- TRAINING ----------------------')
 
-trainer = TweetQATrainer()
+trainer = TFTweetQATrainer()
 trainer.train(train_encodings, val_encodings, args)
 
 print('---------------------- SCORING ----------------------')

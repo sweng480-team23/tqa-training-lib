@@ -28,7 +28,8 @@ args = TweetQATrainingArgs(
     learning_rate=2.9e-5,
     batch_size=8,
     base_model='bert-large-uncased-whole-word-masking-finetuned-squad',
-    model_output_path=model_out_path
+    model_output_path=model_out_path,
+    use_cuda=True
 )
 
 # f = open('model_out/args.json', 'w')
