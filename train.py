@@ -3,10 +3,10 @@ from statistics import mode
 from tqa_training_lib.data_extraction_lib import extract_data
 from tqa_training_lib.data_preparation_lib import prepare_data
 from tqa_training_lib.model_scoring_lib import score_model
-from tqa_training_lib.model_training_lib import do_train
-from transformers import TrainingArguments
-import jsonpickle
+from tqa_training_lib.trainers.torch_tweetqa_trainer import TorchTweetQATrainer, do_train
 import os
+
+from tqa_training_lib.trainers.tweetqa_training_args import TweetQATrainingArgs
 
 model_out_path = 'model_out/'
 log_out_path = model_out_path + 'logs'
@@ -21,30 +21,22 @@ train_encodings, val_encodings = prepare_data(df)
 
 print('---------------------- TRAINING ----------------------')
 
-training_args = TrainingArguments(
-    output_dir=model_out_path,
-    num_train_epochs=2,
-    per_device_train_batch_size=12,
-    per_device_eval_batch_size=12,
-    learning_rate=4.5e-5,
-    warmup_steps=500,
-    weight_decay=0.01,
-    logging_dir=log_out_path,
-    logging_steps=500,
-    save_strategy="steps",
-    save_steps=500
+args = TweetQATrainingArgs(
+    train_encodings=train_encodings,
+    val_encodings=val_encodings,
+    epochs=2,
+    learning_rate=2.9e-5,
+    batch_size=8,
+    base_model='bert-large-uncased-whole-word-masking-finetuned-squad',
+    model_output_path=model_out_path
 )
 
-f = open('model_out/args.json', 'w')
-json_obj = jsonpickle.encode(training_args)
-f.write(json_obj)
+# f = open('model_out/args.json', 'w')
+# json_obj = jsonpickle.encode(args)
+# f.write(json_obj)
 
-do_train(
-    train_encodings,
-    val_encodings,
-    use_cuda=True,
-    training_args=training_args
-)
+trainer = TorchTweetQATrainer()
+trainer.train(train_encodings, val_encodings, args)
 
 print('---------------------- SCORING ----------------------')
 
