@@ -9,69 +9,19 @@ import torch
 import tensorflow as tf
 
 from typing import List
-from transformers import BertModel, BertTokenizer, BertTokenizerFast, TFAutoModelForQuestionAnswering, TFBertForQuestionAnswering, TFBertModel
+from transformers import TFBertForQuestionAnswering
 from nltk.translate.bleu_score import sentence_bleu
 from nlgeval.pycocoevalcap.meteor.meteor import Meteor
 from nlgeval.pycocoevalcap.rouge.rouge import Rouge
-from transformers import AutoTokenizer, AutoModelForQuestionAnswering
+from transformers import AutoTokenizer
 
-
-class BertModelRunner(object):
-    tokenizer: BertTokenizer
-    model: BertModel
-
-    def __init__(self, tokenizer: BertTokenizer, model: BertModel) -> None:
-        self.tokenizer = tokenizer
-        self.model = model
-        super().__init__()
-
-    def answer_tweet_question(self, tweet, question):
-        # tokenize question and text as a pair
-        input_ids = self.tokenizer.encode(question, tweet)
-
-        # string version of tokenized ids
-        tokens = self.tokenizer.convert_ids_to_tokens(input_ids)
-
-        # segment IDs
-        # first occurence of [SEP] token
-        sep_idx = input_ids.index(self.tokenizer.sep_token_id)
-        # number of tokens in segment A (question)
-        num_seg_a = sep_idx + 1
-        # number of tokens in segment B (text)
-        num_seg_b = len(input_ids) - num_seg_a
-
-        # list of 0s and 1s for segment embeddings
-        segment_ids = [1] * num_seg_a + [0] * num_seg_b
-        assert len(segment_ids) == len(input_ids)
-
-        # model output using input_ids and segment_ids
-        self.model.eval()
-        output = self.model(input_ids=torch.tensor([input_ids]), attention_mask=torch.tensor([segment_ids]))
-
-        # reconstructing the answer
-        answer_start = torch.argmax(output.start_logits)
-        answer_end = torch.argmax(output.end_logits)
-        if answer_end >= answer_start:
-            answer = tokens[answer_start]
-            for i in range(answer_start + 1, answer_end + 1):
-                if tokens[i][0:2] == "##":
-                    answer += tokens[i][2:]
-                else:
-                    answer += " " + tokens[i]
-        else:
-            answer = "Unable to find the answer to your question."
-
-        return answer, answer_start.item(), answer_end.item()
+from tqa_training_lib.model_runners.model_runner import ModelRunner
+from tqa_training_lib.model_runners.tf_bert_model_runner import TFBertModelRunner
+from tqa_training_lib.model_runners.torch_bert_model_runner import TorchBertModelRunner
 
 
 def read_data(url: str) -> pd.DataFrame:
     return pd.read_json(url)
-
-
-def get_model_runner(model_path: str) -> BertModelRunner:
-    tokenizer = AutoTokenizer.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
-    model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-    return BertModelRunner(tokenizer, model)
 
 
 def generate_gold_file(df: pd.DataFrame) -> List[dict]:
@@ -79,8 +29,8 @@ def generate_gold_file(df: pd.DataFrame) -> List[dict]:
     return [{'qid': datum['qid'], 'Answer': datum['Answer']} for datum in data_dict]
 
 
-def to_prediction(datum: dict, model_runner: BertModelRunner) -> dict:
-    answer, start, end = model_runner.answer_tweet_question(datum['Tweet'], datum['Question'])
+def to_prediction(datum: dict, runner: ModelRunner) -> dict:
+    answer, start, end = runner.answer_tweet_question(datum['Tweet'], datum['Question'])
     return {
         'qid': datum['qid'],
         'Tweet': datum['Tweet'],
@@ -92,10 +42,9 @@ def to_prediction(datum: dict, model_runner: BertModelRunner) -> dict:
     }
 
 
-def generate_user_file(df: pd.DataFrame, model_path: str) -> List[dict]:
-    model_runner: BertModelRunner = get_model_runner(model_path)
+def generate_user_file(df: pd.DataFrame, runner: ModelRunner) -> List[dict]:
     data_dict: dict = df.to_dict('records')
-    return [to_prediction(datum, model_runner) for datum in data_dict]
+    return [to_prediction(datum, runner) for datum in data_dict]
 
 
 def normalize_answer(s):
@@ -147,54 +96,40 @@ def evaluate(gold, pred, meteor_scorer, rouge_scorer):
     }
 
 
-def generate_user_file_tf(df: pd.DataFrame, model_path: str) -> List[dict]:
-    gpus = tf.config.list_physical_devices('GPU')
-    if gpus:
-        try:
-            # Currently, memory growth needs to be the same across GPUs
-            for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, True)
-                logical_gpus = tf.config.list_logical_devices('GPU')
-                print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-        except RuntimeError as e:
-            # Memory growth must be set before GPUs have been initialized
-            print(e)
-    model = TFBertForQuestionAnswering.from_pretrained(model_path)
-    tokenizer = AutoTokenizer.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
-    data_dict: dict = df.to_dict('records')
-    return [to_prediction_tf(datum, model, tokenizer) for datum in data_dict]
-
-
-def to_prediction_tf(datum: dict, model: TFBertModel, tokenizer: BertTokenizer) -> dict:
-    answer = answer_tweet_question_tf(model, tokenizer, datum['Tweet'], datum['Question'])
-    answer_fixed = re.sub(r'\s##', '', answer)
+def to_prediction(datum: dict, runner: ModelRunner) -> dict:
+    answer = runner.answer_tweet_question(datum['Tweet'], datum['Question'])
     # print(answer + ' -> ' + answer_fixed)
     return {
         'qid': datum['qid'],
         'Tweet': datum['Tweet'],
         'Question': datum['Question'],
-        'Answer': answer_fixed,
+        'Answer': answer,
         'Actual Answer': datum['Answer']
     }
-
-
-def answer_tweet_question_tf(model: TFBertForQuestionAnswering, tokenizer: BertTokenizer, tweet, question):
-    input_dict = tokenizer(question, tweet, return_tensors="tf")
-    outputs = model(input_dict)
-    start_logits = outputs.start_logits
-    end_logits = outputs.end_logits
-    all_tokens = tokenizer.convert_ids_to_tokens(input_dict["input_ids"].numpy()[0])
-    answer = " ".join(all_tokens[tf.math.argmax(start_logits, 1)[0]:tf.math.argmax(end_logits, 1)[0] + 1])
-    return answer
 
 
 def score_model(model_path: str, save_gold_user_files=False, print_scores=False, use_tf=False):
     data: pd.DataFrame = read_data('https://raw.githubusercontent.com/sweng480-team23/tweet-qa-data/main/dev.json')
     gold_file = generate_gold_file(data)
+
     if use_tf:
-        user_file = generate_user_file_tf(data, model_path)
+        gpus = tf.config.list_physical_devices('GPU')
+        if gpus:
+            try:
+                # Currently, memory growth needs to be the same across GPUs
+                for gpu in gpus:
+                    tf.config.experimental.set_memory_growth(gpu, True)
+                    logical_gpus = tf.config.list_logical_devices('GPU')
+                    print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+            except RuntimeError as e:
+                # Memory growth must be set before GPUs have been initialized
+                print(e)
+
+        runner = TFBertModelRunner(model_path, 'bert-large-uncased-whole-word-masking-finetuned-squad')
     else:
-        user_file = generate_user_file(data, model_path)
+        runner = TorchBertModelRunner(model_path, 'bert-large-uncased-whole-word-masking-finetuned-squad')
+
+    user_file = generate_user_file(data, runner)
 
     meteor_scorer = Meteor()
     rouge_scorer = Rouge()
