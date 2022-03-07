@@ -6,7 +6,7 @@ class TweetQATrainingArgs(object):
     learning_rate: float
     model_output_path: str
     base_model: str
-    epochs: str
+    epochs: int
     use_cuda: bool
 
     def __init__(self, batch_size, learning_rate, model_output_path, base_model, epochs, use_cuda):
