@@ -2,7 +2,7 @@ import torch
 from tqa_training_lib.model_runners.model_runner import ModelRunner
 
 
-class TFBertModelRunner(ModelRunner):
+class TorchBertModelRunner(ModelRunner):
 
     def __init__(self, model_path: str, pretrained_base: str) -> None:
         super().__init__(model_path, pretrained_base)
