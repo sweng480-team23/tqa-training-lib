@@ -3,7 +3,7 @@ from statistics import mode
 from tqa_training_lib.data_extraction_lib import extract_data
 from tqa_training_lib.data_preparation_lib import prepare_data
 from tqa_training_lib.model_scoring_lib import score_model
-from tqa_training_lib.trainers.torch_tweetqa_trainer import TorchTweetQATrainer, do_train
+from tqa_training_lib.trainers.torch_tweetqa_trainer import TorchTweetQATrainer
 import os
 
 from tqa_training_lib.trainers.tweetqa_training_args import TweetQATrainingArgs
@@ -22,8 +22,6 @@ train_encodings, val_encodings = prepare_data(df)
 print('---------------------- TRAINING ----------------------')
 
 args = TweetQATrainingArgs(
-    train_encodings=train_encodings,
-    val_encodings=val_encodings,
     epochs=2,
     learning_rate=2.9e-5,
     batch_size=8,
