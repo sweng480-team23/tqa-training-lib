@@ -32,8 +32,16 @@ From there, you can simply reference the parts of the library module that you ne
 from tqa_training_lib.trainers.tf_tweetqa_trainer import TFTweetQATrainer
 ```
 
+## IMPORTANT
+
+If you experience \[CLS\] issues with Tensorflow, try running the training with `$env:TF_GPU_ALLOCATOR="cuda_malloc_async"` (powershell). Example for manual training:
+
+```powershell
+$env:TF_GPU_ALLOCATOR="cuda_malloc_async"; python .\tf_train.py
+```
+
 ## Todo
 
 - Improve documentation
-- Fix TF training issue for > ~ 580 training points (try CPU?)
+- Fix TF training issue for > ~ 580 training points (try CPU? seems to be memory related)
 - Investigate problem for low scores on torch models (try w/o 🤗 trainer?)
