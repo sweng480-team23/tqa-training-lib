@@ -5,15 +5,12 @@ import pandas as pd
 import numpy as np
 import string
 import re
-import torch
 import tensorflow as tf
 
 from typing import List
-from transformers import TFBertForQuestionAnswering
 from nltk.translate.bleu_score import sentence_bleu
 from nlgeval.pycocoevalcap.meteor.meteor import Meteor
 from nlgeval.pycocoevalcap.rouge.rouge import Rouge
-from transformers import AutoTokenizer
 
 from tqa_training_lib.model_runners.model_runner import ModelRunner
 from tqa_training_lib.model_runners.tf_bert_model_runner import TFBertModelRunner
@@ -93,18 +90,6 @@ def evaluate(gold, pred, meteor_scorer, rouge_scorer):
         'BLEU-1': np.mean(bleus),
         'METEOR': np.mean(meteors),
         'ROUGE': np.mean(rouges)
-    }
-
-
-def to_prediction(datum: dict, runner: ModelRunner) -> dict:
-    answer = runner.answer_tweet_question(datum['Tweet'], datum['Question'])
-    # print(answer + ' -> ' + answer_fixed)
-    return {
-        'qid': datum['qid'],
-        'Tweet': datum['Tweet'],
-        'Question': datum['Question'],
-        'Answer': answer,
-        'Actual Answer': datum['Answer']
     }
 
 
