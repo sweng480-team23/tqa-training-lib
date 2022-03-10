@@ -315,6 +315,7 @@ def prepare_data(df: pd.DataFrame, for_tf=False, save_data=False, print_stats=Fa
     quality_x_train = [datum for datum in x_train_filtered if datum["start_position"] >= 0 and datum["end_position"] > 0]
     quality_x_val = [datum for datum in x_val_filtered if datum["start_position"] >= 0 and datum["end_position"] > 0]
 
+    # tweak the range below until the CLS issue occurs
     quality_x_train = quality_x_train[0:583]
 
     if print_stats:
