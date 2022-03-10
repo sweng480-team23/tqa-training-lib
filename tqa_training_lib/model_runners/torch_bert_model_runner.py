@@ -1,11 +1,14 @@
 import torch
+from transformers import AutoTokenizer, BertForQuestionAnswering
 from tqa_training_lib.model_runners.model_runner import ModelRunner
 
 
 class TorchBertModelRunner(ModelRunner):
 
     def __init__(self, model_path: str, pretrained_base: str) -> None:
-        super().__init__(model_path, pretrained_base)
+        self.tokenizer = AutoTokenizer.from_pretrained(pretrained_base)
+        self.model = BertForQuestionAnswering.from_pretrained(model_path)
+        super().__init__()
 
     def answer_tweet_question(self, tweet, question) -> tuple[str, int, int]:
         tweet = tweet.lower()
