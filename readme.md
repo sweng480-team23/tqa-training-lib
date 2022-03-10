@@ -43,5 +43,7 @@ $env:TF_GPU_ALLOCATOR="cuda_malloc_async"; python .\tf_train.py
 ## Todo
 
 - Improve documentation
+- ModelRunner check for valid model file at location and throw error if missing
 - Fix TF training issue for > ~ 580 training points (try CPU? seems to be memory related)
 - Investigate problem for low scores on torch models (try w/o 🤗 trainer?)
+- Fix install_requires in setup.py (see comments in file)
