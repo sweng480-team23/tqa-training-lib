@@ -16,7 +16,7 @@ with open("readme.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="tqa_training_lib",
-    version="0.0.2",
+    version="0.1.0",
     author="Luke Westfall et al",
     author_email="lwestfall1@gmail.com",
     description="Common functions for tweetqa model training",
