@@ -1,7 +1,15 @@
+import os
 import setuptools
 
 with open("readme.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
+
+requirements_path = os.path.dirname(os.path.realpath(__file__)) + '/requirements.txt'
+
+install_requires = []
+if os.path.isfile(requirements_path):
+    with open(requirements_path) as f:
+        install_requires = f.read().splitlines()
 
 setuptools.setup(
     name="tqa_training_lib",
