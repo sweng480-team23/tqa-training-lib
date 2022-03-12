@@ -6,18 +6,9 @@ from sklearn.metrics import precision_score
 from sklearn.metrics import f1_score
 from transformers import Trainer
 from transformers import TrainingArguments
-from transformers import BertForQuestionAnswering
+from transformers import AutoModelForQuestionAnswering
 
-
-class TweetQADataset(torch.utils.data.Dataset):
-    def __init__(self, encodings):
-        self.encodings = encodings
-
-    def __getitem__(self, idx):
-        return {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
-
-    def __len__(self):
-        return len(self.encodings.input_ids)
+from tqa_training_lib.trainers.tweetqa_trainer import TweetQATrainer
 
 
 def compute_metrics(p):
@@ -48,35 +39,44 @@ def compute_metrics(p):
     }
 
 
-def do_train(train_encodings, val_encodings, model_out_path: str, log_out_path: str):
-    train_dataset = TweetQADataset(train_encodings)
-    val_dataset = TweetQADataset(val_encodings)
+class TweetQADataset(torch.utils.data.Dataset):
+    def __init__(self, encodings):
+        self.encodings = encodings
 
-    bert_model = BertForQuestionAnswering.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
+    def __getitem__(self, idx):
+        return {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
 
-    training_args = TrainingArguments(
-        output_dir=model_out_path,
-        num_train_epochs=2,
-        per_device_train_batch_size=16,
-        per_device_eval_batch_size=32,
-        warmup_steps=500,
-        weight_decay=0.01,
-        logging_dir=log_out_path,
-        logging_steps=500,
-        save_strategy="steps",
-        save_steps=500
-    )
+    def __len__(self):
+        return len(self.encodings.input_ids)
 
-    bert_model.train()
 
-    trainer = Trainer(
-        model=bert_model,
-        args=training_args,
-        train_dataset=train_dataset,
-        eval_dataset=val_dataset,
-        compute_metrics=compute_metrics
-    )
+class TorchTweetQATrainer(TweetQATrainer):
+    def train(self, train_encodings, val_encodings, args):
+        train_dataset = TweetQADataset(train_encodings)
+        val_dataset = TweetQADataset(val_encodings)
 
-    trainer.train()
-    trainer.evaluate()
-    trainer.save_model(model_out_path)
+        bert_model = AutoModelForQuestionAnswering.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
+
+        device = 'cpu'
+
+        if args.use_cuda:
+            device = 'cuda'
+
+        print('using device: ' + device)
+        bert_model = bert_model.to(device)
+
+        bert_model.train()
+
+        huggingface_args = args.to_huggingface_trainer_arguments()
+
+        trainer = Trainer(
+            model=bert_model,
+            args=huggingface_args,
+            train_dataset=train_dataset,
+            eval_dataset=val_dataset,
+            compute_metrics=compute_metrics
+        )
+
+        trainer.train()
+        trainer.evaluate()
+        trainer.save_model(args.model_output_path)
