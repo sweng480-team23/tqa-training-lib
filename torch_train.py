@@ -39,4 +39,4 @@ trainer.train(train_encodings, val_encodings, args)
 
 print('---------------------- SCORING ----------------------')
 
-score_model(model_out_path)
+score_model(model_out_path, save_gold_user_files=True, print_scores=True, use_tf=False)
