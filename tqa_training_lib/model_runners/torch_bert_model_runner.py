@@ -1,6 +1,7 @@
 import torch
 from transformers import AutoTokenizer, BertForQuestionAnswering
 from tqa_training_lib.model_runners.model_runner import ModelRunner
+from typing import Tuple
 
 
 class TorchBertModelRunner(ModelRunner):
@@ -10,7 +11,7 @@ class TorchBertModelRunner(ModelRunner):
         self.model = BertForQuestionAnswering.from_pretrained(model_path)
         super().__init__()
 
-    def answer_tweet_question(self, tweet, question) -> tuple[str, int, int]:
+    def answer_tweet_question(self, tweet, question) -> Tuple[str, int, int]:
         tweet = tweet.lower()
         question = question.lower()
         # tokenize question and text as a pair
