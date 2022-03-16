@@ -2,6 +2,7 @@ import re
 from numpy import dtype
 import tensorflow as tf
 from transformers import AutoTokenizer, TFBertForQuestionAnswering
+from typing import Tuple
 
 from tqa_training_lib.model_runners.model_runner import ModelRunner
 
@@ -13,7 +14,7 @@ class TFBertModelRunner(ModelRunner):
         self.model = TFBertForQuestionAnswering.from_pretrained(model_path)
         super().__init__()
 
-    def answer_tweet_question(self, tweet, question) -> tuple[str, int, int]:
+    def answer_tweet_question(self, tweet, question) -> Tuple[str, int, int]:
         input_dict = self.tokenizer(question, tweet, return_tensors="tf")
         outputs = self.model(input_dict)
         start_logits = outputs.start_logits
