@@ -46,7 +46,12 @@ class TFTweetQATrainer(TweetQATrainer):
 
             optimizer = tf.keras.optimizers.Adam(learning_rate=args.learning_rate)
             model.compile(optimizer=optimizer, loss=loss)   # can also use any keras loss fn
-            model.fit(train_dataset.batch(args.batch_size), epochs=args.epochs, batch_size=args.batch_size)
+            model.fit(
+                train_dataset.batch(args.batch_size),
+                validation_data=val_dataset.batch(args.batch_size),
+                epochs=args.epochs,
+                batch_size=args.batch_size
+            )
 
             model.save_pretrained(args.model_output_path)
             del model, loss, optimizer, val_dataset, train_dataset
