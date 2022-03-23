@@ -6,7 +6,7 @@ from tqa_training_lib.trainers.tweetqa_training_args import TweetQATrainingArgs
 from tqa_training_lib.trainers.tweetqa_trainer import TweetQATrainer
 
 
-class TFTweetQATrainer(TweetQATrainer):
+class TFTweetQABertTrainer(TweetQATrainer):
     def train(self, train_encodings, val_encodings, args):
         if args.use_cuda:
             device = "/gpu:0"

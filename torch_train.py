@@ -3,7 +3,7 @@ from statistics import mode
 from tqa_training_lib.data_extraction_lib import extract_data
 from tqa_training_lib.data_preparation_lib import prepare_data
 from tqa_training_lib.model_scoring_lib import score_model
-from tqa_training_lib.trainers.torch_tweetqa_trainer import TorchTweetQATrainer
+from tqa_training_lib.trainers.torch_tweetqa_bert_trainer import TorchTweetQABertTrainer
 import os
 
 from tqa_training_lib.trainers.tweetqa_training_args import TweetQATrainingArgs
@@ -34,7 +34,7 @@ args = TweetQATrainingArgs(
 # json_obj = jsonpickle.encode(args)
 # f.write(json_obj)
 
-trainer = TorchTweetQATrainer()
+trainer = TorchTweetQABertTrainer()
 trainer.train(train_encodings, val_encodings, args)
 
 print('---------------------- SCORING ----------------------')
