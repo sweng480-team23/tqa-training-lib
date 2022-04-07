@@ -50,7 +50,7 @@ class TweetQADataset(torch.utils.data.Dataset):
         return len(self.encodings.input_ids)
 
 
-class TorchTweetQATrainer(TweetQATrainer):
+class TorchTweetQABertTrainer(TweetQATrainer):
     def train(self, train_encodings, val_encodings, args):
         train_dataset = TweetQADataset(train_encodings)
         val_dataset = TweetQADataset(val_encodings)

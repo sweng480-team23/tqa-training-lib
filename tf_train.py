@@ -3,7 +3,7 @@ import os
 from tqa_training_lib.data_extraction_lib import extract_data
 from tqa_training_lib.data_preparation_lib import prepare_data
 from tqa_training_lib.model_scoring_lib import score_model
-from tqa_training_lib.trainers.tf_tweetqa_trainer import TFTweetQATrainer
+from tqa_training_lib.trainers.tf_tweetqa_bert_trainer import TFTweetQABertTrainer
 from tqa_training_lib.trainers.tweetqa_training_args import TweetQATrainingArgs
 
 model_out_path = 'model_out/'
@@ -28,7 +28,7 @@ args = TweetQATrainingArgs(
 
 print('---------------------- TRAINING ----------------------')
 
-trainer = TFTweetQATrainer()
+trainer = TFTweetQABertTrainer()
 trainer.train(train_encodings, val_encodings, args)
 
 print('---------------------- SCORING ----------------------')
